@@ -24,21 +24,9 @@ jobs:
           tar -xf blender-4.2.3-linux-x64.tar.xz
           echo "$PWD/blender-4.2.3-linux-x64" >> $GITHUB_PATH
 
-      - name: Add Save and Export to file.py
-        run: |
-          echo "import os" >> file.py
-          echo "cwd = os.getcwd()" >> file.py
-          echo "bpy.ops.wm.save_as_mainfile(filepath=os.path.join(cwd, 'realistic_pickup.blend'))" >> file.py
-          echo "bpy.ops.export_scene.gltf(filepath=os.path.join(cwd, 'pickup.glb'))" >> file.py
-          echo "scene = bpy.context.scene" >> file.py
-          echo "scene.render.engine = 'CYCLES'" >> file.py
-          echo "if hasattr(scene, 'cycles'): scene.cycles.samples = 64" >> file.py
-          echo "scene.render.filepath = os.path.join(cwd, 'pickup_render.png')" >> file.py
-          echo "bpy.ops.render.render(write_still=True)" >> file.py
-
       - name: Run Blender
         run: |
-          blender -b -P file.py
+          blender -b -P file.py --python-exit-code 1
 
       - name: Upload Output Files
         uses: actions/upload-artifact@v4
