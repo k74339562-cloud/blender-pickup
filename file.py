@@ -783,9 +783,23 @@ background = scene.world.node_tree.nodes.get("Background")
 background.inputs["Color"].default_value = (0.025, 0.012, 0.006, 1)
 background.inputs["Strength"].default_value = 0.3
 
-# حفظ الملف
-bpy.ops.wm.save_as_mainfile(
-    filepath="//realistic_pickup.blend"
-)
+# =====================================================
+# الحفظ والتصدير والرندر النهائي
+# =====================================================
+import os
+cwd = os.getcwd()
 
-print("تم إنشاء شاحنة Pickup كاملة بنجاح")
+# 1. حفظ ملف بلندر
+bpy.ops.wm.save_as_mainfile(filepath=os.path.join(cwd, "realistic_pickup.blend"))
+
+# 2. تصدير المجسم للهاتف بصيغة GLB
+bpy.ops.export_scene.gltf(filepath=os.path.join(cwd, "pickup.glb"))
+
+# 3. تصيير الصورة بالمعالج
+scene.render.engine = "CYCLES"
+if hasattr(scene, "cycles"):
+    scene.cycles.samples = 64
+scene.render.filepath = os.path.join(cwd, "pickup_render.png")
+bpy.ops.render.render(write_still=True)
+
+print("--- تم الانتهاء بنجاح وحفظ كافة الملفات ---")
