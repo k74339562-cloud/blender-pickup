@@ -24,33 +24,20 @@ jobs:
           tar -xf blender-4.2.3-linux-x64.tar.xz
           echo "$PWD/blender-4.2.3-linux-x64" >> $GITHUB_PATH
 
-      - name: Build, Export GLB, and Render
+      - name: Add Save and Export to file.py
         run: |
-          # إضافة أوامر الحفظ والتصدير والرندر بمسارات صحيحة في نهاية ملف بايثون
-          cat << 'EOF' >> file.py
+          echo "import os" >> file.py
+          echo "cwd = os.getcwd()" >> file.py
+          echo "bpy.ops.wm.save_as_mainfile(filepath=os.path.join(cwd, 'realistic_pickup.blend'))" >> file.py
+          echo "bpy.ops.export_scene.gltf(filepath=os.path.join(cwd, 'pickup.glb'))" >> file.py
+          echo "scene = bpy.context.scene" >> file.py
+          echo "scene.render.engine = 'CYCLES'" >> file.py
+          echo "if hasattr(scene, 'cycles'): scene.cycles.samples = 64" >> file.py
+          echo "scene.render.filepath = os.path.join(cwd, 'pickup_render.png')" >> file.py
+          echo "bpy.ops.render.render(write_still=True)" >> file.py
 
-import os
-cwd = os.getcwd()
-
-# 1. حفظ ملف بلندر الأصلي بمسار صحيح
-abs_blend = os.path.join(cwd, "realistic_pickup.blend")
-bpy.ops.wm.save_as_mainfile(filepath=abs_blend)
-
-# 2. تصدير المجسم بصيغة GLB للعرض على الهواتف
-abs_glb = os.path.join(cwd, "pickup.glb")
-bpy.ops.export_scene.gltf(filepath=abs_glb)
-
-# 3. تصيير صورة واقعية باستخدام المعالج
-scene = bpy.context.scene
-scene.render.engine = "CYCLES"
-if hasattr(scene, "cycles"):
-    scene.cycles.samples = 64  # تسريع الرندر ليأخذ ثوانٍ قليلة
-scene.render.filepath = os.path.join(cwd, "pickup_render.png")
-bpy.ops.render.render(write_still=True)
-print("--- تم الانتهاء من جميع المهام بنجاح ---")
-EOF
-
-          # تشغيل بلندر
+      - name: Run Blender
+        run: |
           blender -b -P file.py
 
       - name: Upload Output Files
