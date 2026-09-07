@@ -1,0 +1,48 @@
+name: Run Blender Script
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: # يتيح لك زر تشغيل يدوي من الهاتف في أي وقت
+
+jobs:
+  build-and-render:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libglu1-mesa libxi6 libxrender1 libxkbcommon0
+
+      - name: Setup Blender 4.2 LTS
+        run: |
+          wget -q https://download.blender.org/release/Blender4.2/blender-4.2.3-linux-x64.tar.xz
+          tar -xf blender-4.2.3-linux-x64.tar.xz
+          echo "$PWD/blender-4.2.3-linux-x64" >> $GITHUB_PATH
+
+      - name: Build 3D Model
+        run: |
+          blender -b -P file.py
+
+      - name: Export to GLB (Mobile Friendly 3D)
+        run: |
+          # تصدير بصيغة GLB لفتح المجسم من الجوال مباشرة
+          blender -b realistic_pickup.blend --python-expr "import bpy; bpy.ops.export_scene.gltf(filepath='pickup.glb')"
+
+      - name: Render Image (Cycles CPU)
+        run: |
+          # سيرفرات جيثب لا تملك كرت شاشة حقيقي، لذلك نستخدم Cycles للمعالج لتصيير الصورة بنجاح
+          blender -b realistic_pickup.blend -E CYCLES -o //pickup_render_ -f 1
+
+      - name: Upload Output Files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pickup-car-output
+          path: |
+            realistic_pickup.blend
+            pickup.glb
+            pickup_render_*.png
