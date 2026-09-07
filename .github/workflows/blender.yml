@@ -3,7 +3,7 @@ name: Run Blender Script
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch: # يتيح لك زر تشغيل يدوي من الهاتف في أي وقت
+  workflow_dispatch:
 
 jobs:
   build-and-render:
@@ -24,19 +24,34 @@ jobs:
           tar -xf blender-4.2.3-linux-x64.tar.xz
           echo "$PWD/blender-4.2.3-linux-x64" >> $GITHUB_PATH
 
-      - name: Build 3D Model
+      - name: Build, Export GLB, and Render
         run: |
+          # إضافة أوامر الحفظ والتصدير والرندر بمسارات صحيحة في نهاية ملف بايثون
+          cat << 'EOF' >> file.py
+
+import os
+cwd = os.getcwd()
+
+# 1. حفظ ملف بلندر الأصلي بمسار صحيح
+abs_blend = os.path.join(cwd, "realistic_pickup.blend")
+bpy.ops.wm.save_as_mainfile(filepath=abs_blend)
+
+# 2. تصدير المجسم بصيغة GLB للعرض على الهواتف
+abs_glb = os.path.join(cwd, "pickup.glb")
+bpy.ops.export_scene.gltf(filepath=abs_glb)
+
+# 3. تصيير صورة واقعية باستخدام المعالج
+scene = bpy.context.scene
+scene.render.engine = "CYCLES"
+if hasattr(scene, "cycles"):
+    scene.cycles.samples = 64  # تسريع الرندر ليأخذ ثوانٍ قليلة
+scene.render.filepath = os.path.join(cwd, "pickup_render.png")
+bpy.ops.render.render(write_still=True)
+print("--- تم الانتهاء من جميع المهام بنجاح ---")
+EOF
+
+          # تشغيل بلندر
           blender -b -P file.py
-
-      - name: Export to GLB (Mobile Friendly 3D)
-        run: |
-          # تصدير بصيغة GLB لفتح المجسم من الجوال مباشرة
-          blender -b realistic_pickup.blend --python-expr "import bpy; bpy.ops.export_scene.gltf(filepath='pickup.glb')"
-
-      - name: Render Image (Cycles CPU)
-        run: |
-          # سيرفرات جيثب لا تملك كرت شاشة حقيقي، لذلك نستخدم Cycles للمعالج لتصيير الصورة بنجاح
-          blender -b realistic_pickup.blend -E CYCLES -o //pickup_render_ -f 1
 
       - name: Upload Output Files
         uses: actions/upload-artifact@v4
@@ -45,4 +60,4 @@ jobs:
           path: |
             realistic_pickup.blend
             pickup.glb
-            pickup_render_*.png
+            pickup_render.png
